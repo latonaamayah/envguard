@@ -1,85 +1,76 @@
 """CLI entry point for envguard."""
-
 import sys
 import argparse
+from typing import Optional, Sequence
 
-from envguard.loader import load_env_file, EnvFileNotFoundError, EnvParseError
+from envguard.loader import EnvFileNotFoundError, EnvParseError, load_env_file
 from envguard.schema import Schema
 from envguard.validator import validate
-from envguard.reporter import render, OutputFormat
+from envguard.reporter import OutputFormat, render
+from envguard.auditor import audit
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="envguard",
-        description="Validate a .env file against a schema definition.",
+        description="Validate and audit .env files against a schema.",
     )
-    parser.add_argument(
-        "env_file",
-        help="Path to the .env file to validate (e.g. .env or .env.production)",
-    )
-    parser.add_argument(
-        "--schema",
-        default="envguard.schema.json",
-        metavar="SCHEMA_FILE",
-        help="Path to the schema JSON file (default: envguard.schema.json)",
-    )
+    parser.add_argument("env_file", help="Path to the .env file to validate.")
+    parser.add_argument("schema_file", help="Path to the schema YAML/JSON file.")
     parser.add_argument(
         "--format",
         choices=[f.value for f in OutputFormat],
         default=OutputFormat.TEXT.value,
-        dest="output_format",
-        help="Output format: text or json (default: text)",
+        help="Output format (default: text).",
     )
     parser.add_argument(
-        "--strict",
+        "--audit",
         action="store_true",
-        help="Exit with non-zero code even when only warnings are present",
+        help="Also run an audit for undeclared or unused optional variables.",
+    )
+    parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="Disable colored output.",
     )
     return parser
 
 
-def main(argv=None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    # Load .env file
     try:
         env_vars = load_env_file(args.env_file)
     except EnvFileNotFoundError as exc:
-        print(f"[envguard] ERROR: {exc}", file=sys.stderr)
+        print(f"error: {exc}", file=sys.stderr)
         return 2
     except EnvParseError as exc:
-        print(f"[envguard] PARSE ERROR: {exc}", file=sys.stderr)
+        print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    # Load schema
     try:
-        schema = Schema.from_file(args.schema)
+        schema = Schema.from_file(args.schema_file)
     except FileNotFoundError:
-        print(
-            f"[envguard] ERROR: Schema file not found: {args.schema}",
-            file=sys.stderr,
-        )
+        print(f"error: schema file not found: {args.schema_file}", file=sys.stderr)
         return 2
-    except (ValueError, KeyError) as exc:
-        print(f"[envguard] ERROR: Invalid schema: {exc}", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: failed to load schema: {exc}", file=sys.stderr)
         return 2
 
-    # Validate
-    result = validate(schema, env_vars)
+    result = validate(env_vars, schema)
+    fmt = OutputFormat(args.format)
+    use_color = not args.no_color
+    print(render(result, fmt, use_color=use_color))
 
-    # Render output
-    output_format = OutputFormat(args.output_format)
-    print(render(result, output_format))
+    if args.audit:
+        audit_result = audit(env_vars, schema)
+        if audit_result.has_issues:
+            print("\n[audit]")
+            print(audit_result.summary())
 
-    # Determine exit code
-    if not result.is_valid:
-        return 1
-    if args.strict and result.warnings:
-        return 1
-    return 0
+    return 0 if result.is_valid else 1
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
