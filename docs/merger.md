@@ -60,4 +60,8 @@ Exit codes follow the same convention as the rest of `envguard`:
 | Code | Meaning |
 |------|---------|
 | `0`  | Success |
+| `1`  | Conflicts detected (only when `--strict` flag is used) |
 | `2`  | File not found or parse error |
+
+> **Tip:** Use `--strict` in CI pipelines to treat any conflict as a fatal
+> error, ensuring no accidental variable shadowing goes unnoticed.
