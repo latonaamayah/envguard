@@ -72,13 +72,22 @@ def export_markdown(schema: Schema) -> str:
     return "\n".join(lines)
 
 
+_EXPORTERS = {
+    ExportFormat.DOTENV: export_dotenv,
+    ExportFormat.JSON: export_json,
+    ExportFormat.MARKDOWN: export_markdown,
+}
+
+
 def render(schema: Schema, fmt: ExportFormat, out: IO[str]) -> None:
-    """Write the exported schema to *out* in the requested format."""
-    if fmt == ExportFormat.DOTENV:
-        out.write(export_dotenv(schema))
-    elif fmt == ExportFormat.JSON:
-        out.write(export_json(schema))
-    elif fmt == ExportFormat.MARKDOWN:
-        out.write(export_markdown(schema))
-    else:
+    """Write the exported schema to *out* in the requested format.
+
+    Raises
+    ------
+    ValueError
+        If *fmt* is not a recognised :class:`ExportFormat` value.
+    """
+    exporter = _EXPORTERS.get(fmt)
+    if exporter is None:
         raise ValueError(f"Unsupported export format: {fmt}")
+    out.write(exporter(schema))
