@@ -38,8 +38,25 @@ class LintResult:
         )
 
 
+_SENSITIVE_HINTS = ("SECRET", "PASSWORD", "TOKEN", "KEY", "PASS")
+
+
+def _is_sensitive_key(key: str) -> bool:
+    """Return True if *key* looks like it holds a sensitive value."""
+    return any(hint in key.upper() for hint in _SENSITIVE_HINTS)
+
+
 def lint(env: Dict[str, str], schema: Schema) -> LintResult:
-    """Run lint checks on *env* values against *schema* definitions."""
+    """Run lint checks on *env* values against *schema* definitions.
+
+    Checks performed:
+    - Required variables that are present but empty are reported as errors.
+    - Sensitive-looking variables (e.g. containing TOKEN, SECRET) without a
+      schema description are reported as warnings.
+    - Values longer than 512 characters are flagged as a possible
+      misconfiguration.
+    - Values with leading or trailing whitespace are flagged as warnings.
+    """
     result = LintResult()
 
     for key, var in schema.variables.items():
@@ -52,16 +69,14 @@ def lint(env: Dict[str, str], schema: Schema) -> LintResult:
             )
 
         # Warn about sensitive-looking keys that have no description
-        sensitive_hints = ("SECRET", "PASSWORD", "TOKEN", "KEY", "PASS")
-        if any(hint in key.upper() for hint in sensitive_hints):
-            if not var.description:
-                result.issues.append(
-                    LintIssue(
-                        key,
-                        "Sensitive variable has no description in schema.",
-                        "warning",
-                    )
+        if _is_sensitive_key(key) and not var.description:
+            result.issues.append(
+                LintIssue(
+                    key,
+                    "Sensitive variable has no description in schema.",
+                    "warning",
                 )
+            )
 
         # Warn about very long values that may indicate a misconfiguration
         if value and len(value) > 512:
