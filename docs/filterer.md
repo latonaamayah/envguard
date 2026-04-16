@@ -25,7 +25,7 @@ print(result.summary()) # "2 matched, 4 excluded"
 ### `FilterResult`
 
 | Attribute  | Type            | Description                        |
-|------------|-----------------|------------------------------------|
+|------------|-----------------|------------------------------------||
 | `matched`  | `Dict[str,str]` | Variables that satisfied criteria  |
 | `excluded` | `Dict[str,str]` | Variables that did not match       |
 
@@ -33,6 +33,14 @@ print(result.summary()) # "2 matched, 4 excluded"
 
 - `has_matches() -> bool` — `True` when at least one variable matched.
 - `summary() -> str` — Human-readable count of matched vs excluded.
+- `to_dict() -> Dict[str, Dict[str, str]]` — Returns both groups as a single
+  dictionary with `"matched"` and `"excluded"` keys, useful for serialisation
+  (e.g. passing to `json.dumps`).
+
+  ```python
+  import json
+  print(json.dumps(result.to_dict(), indent=2))
+  ```
 
 ## Criteria
 
