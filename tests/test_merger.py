@@ -77,3 +77,10 @@ def test_merge_empty_files(tmp_env):
     result = merge([f1, f2])
     assert result.merged == {}
     assert not result.has_conflicts
+
+
+def test_merge_raises_on_missing_file(tmp_path):
+    """merge() should raise FileNotFoundError when a given path does not exist."""
+    missing = str(tmp_path / "nonexistent.env")
+    with pytest.raises(FileNotFoundError):
+        merge([missing])
