@@ -88,3 +88,17 @@ def test_custom_separator():
     result = group(env, separator=".")
     assert "APP" in result.groups
     assert len(result.groups["APP"]) == 2
+
+
+def test_group_result_total_grouped_count(env):
+    """GroupResult should report the correct total number of grouped keys."""
+    result = group(env)
+    expected = sum(len(entries) for entries in result.groups.values())
+    assert result.total_grouped == expected
+
+
+def test_group_result_total_grouped_excludes_ungrouped(env):
+    """total_grouped should not include ungrouped keys."""
+    result = group(env)
+    ungrouped_count = len(result.ungrouped)
+    assert result.total_grouped + ungrouped_count == len(env)
