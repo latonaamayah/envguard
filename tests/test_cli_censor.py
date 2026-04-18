@@ -17,6 +17,13 @@ def _args(parser, *argv):
     return parser.parse_args(argv)
 
 
+def _make_args(tmp_env, filename, content, *extra_argv):
+    """Helper to write a temp env file and parse CLI args in one step."""
+    f = _write(tmp_env / filename, content)
+    parser = build_censor_parser()
+    return parser.parse_args([str(f), *extra_argv]), f
+
+
 def test_run_censor_exits_zero(tmp_env):
     f = _write(tmp_env / ".env", "APP_HOST=localhost\nDB_PASSWORD=secret\n")
     parser = build_censor_parser()
@@ -66,3 +73,9 @@ def test_run_censor_show_summary(tmp_env, capsys):
     run_censor(args)
     out = capsys.readouterr().out
     assert "censored" in out
+
+
+def test_run_censor_empty_file_exits_zero(tmp_env):
+    """An empty .env file should be handled gracefully and return exit code 0."""
+    args, _ = _make_args(tmp_env, "empty.env", "")
+    assert run_censor(args) == 0
