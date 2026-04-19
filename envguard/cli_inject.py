@@ -33,6 +33,12 @@ def build_inject_parser(subparsers=None) -> argparse.ArgumentParser:
     return parser
 
 
+def _write_env_file(path: str, env: dict[str, str]) -> None:
+    """Serialize *env* and write it to *path* as a .env file."""
+    lines = [f"{k}={v}" for k, v in env.items()]
+    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def run_inject(args: argparse.Namespace) -> int:
     try:
         source_env = load_env_file(args.source)
@@ -52,8 +58,7 @@ def run_inject(args: argparse.Namespace) -> int:
     print(result.summary())
 
     if not args.dry_run:
-        lines = [f"{k}={v}" for k, v in target_env.items()]
-        Path(args.target).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        _write_env_file(args.target, result.as_dict())
     else:
         for key, value in result.as_dict().items():
             print(f"{key}={value}")
