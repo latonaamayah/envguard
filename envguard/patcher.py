@@ -26,12 +26,24 @@ class PatchResult:
         updated = sum(1 for e in self.entries if e.action == "updated")
         return f"{added} added, {updated} updated, {len(self.entries) - added - updated} unchanged"
 
+    def changed_entries(self) -> List[PatchEntry]:
+        """Return only entries where a change was made (added or updated)."""
+        return [e for e in self.entries if e.action != "unchanged"]
+
 
 def patch(env: Dict[str, str], updates: Dict[str, str]) -> PatchResult:
     """Apply *updates* on top of *env*, returning a new merged mapping.
 
     Keys present in *updates* are added or overwritten; all other keys in
     *env* are preserved without modification.
+
+    Args:
+        env: The original environment mapping.
+        updates: Key-value pairs to apply on top of *env*.
+
+    Returns:
+        A :class:`PatchResult` containing the merged mapping and a log of
+        every key that was processed.
     """
     result: Dict[str, str] = dict(env)
     entries: List[PatchEntry] = []
