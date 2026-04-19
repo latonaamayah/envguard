@@ -25,6 +25,16 @@ class GroupResult:
             parts.append(f"  [ungrouped]: {len(self.ungrouped)} variable(s)")
         return "\n".join(parts)
 
+    def get_group(self, name: str) -> List[Tuple[str, str]]:
+        """Return entries for a group by name (case-insensitive).
+
+        Raises KeyError if the group does not exist.
+        """
+        key = name.upper()
+        if key not in self.groups:
+            raise KeyError(f"Group {name!r} not found. Available: {self.group_names}")
+        return self.groups[key]
+
 
 def _extract_prefix(key: str, separator: str = "_") -> str:
     """Return the first segment of a key split by separator."""
