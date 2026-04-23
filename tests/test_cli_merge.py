@@ -76,3 +76,11 @@ def test_run_merge_show_conflicts_to_stderr(tmp_env, capsys):
 def test_run_merge_missing_file_exits_two(tmp_path):
     code = run_merge(_args(sources=[str(tmp_path / "nonexistent.env")]))
     assert code == 2
+
+
+def test_run_merge_no_sources_exits_zero(capsys):
+    """Merging zero source files should succeed and produce no output."""
+    code = run_merge(_args(sources=[]))
+    assert code == 0
+    out = capsys.readouterr().out
+    assert out.strip() == ""
