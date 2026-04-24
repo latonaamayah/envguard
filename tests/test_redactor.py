@@ -32,6 +32,13 @@ def test_is_not_sensitive_port():
     assert _is_sensitive("PORT") is False
 
 
+def test_is_sensitive_case_insensitive():
+    """Key matching should be case-insensitive so lowercase keys are caught."""
+    assert _is_sensitive("db_password") is True
+    assert _is_sensitive("github_token") is True
+    assert _is_sensitive("stripe_api_key") is True
+
+
 # ---------------------------------------------------------------------------
 # redact()
 # ---------------------------------------------------------------------------
@@ -84,6 +91,13 @@ def test_extra_keys_redacted(sample_env):
     result = redact(sample_env, extra_keys=["APP_ENV"])
     assert result.redacted["APP_ENV"] == DEFAULT_PLACEHOLDER
     assert "APP_ENV" in result.redacted_keys
+
+
+def test_extra_keys_unknown_key(sample_env):
+    """extra_keys entries that are absent from the env should be silently ignored."""
+    result = redact(sample_env, extra_keys=["NONEXISTENT_KEY"])
+    assert "NONEXISTENT_KEY" not in result.redacted
+    assert "NONEXISTENT_KEY" not in result.redacted_keys
 
 
 def test_original_env_unchanged(sample_env):
