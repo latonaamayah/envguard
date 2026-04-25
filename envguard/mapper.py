@@ -53,7 +53,19 @@ def map_env(
 
     Returns:
         A MapResult containing all entries and metadata.
+
+    Raises:
+        ValueError: If *mapping* contains duplicate target keys, which would
+            cause silent data loss when multiple source keys map to the same
+            destination key.
     """
+    target_keys = list(mapping.values())
+    duplicate_targets = {k for k in target_keys if target_keys.count(k) > 1}
+    if duplicate_targets:
+        raise ValueError(
+            f"Mapping contains duplicate target keys: {sorted(duplicate_targets)}"
+        )
+
     result = MapResult()
     used_mappings = set()
 
